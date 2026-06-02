@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+
+# IDE
+.idea/
+.vscode/
+.superpowers/
+
+# Data & cache (large files, not for repo)
+data_lake/
+checkpoint*.json
+*.cache*.json
+*_cache_*.json
+
+# Environment
+.env
+.em_cookies.json
+
+# Database
+*.db
+
+# Test output
+pipeline_output.json
+bt_req.json
+bt_result.json
+bt_result_b.json
+temp_bt_*.json
+
+# Frontend
+dragon-engine-web/node_modules/
+dragon-engine-web/dist/
+
+# OS
+.DS_Store
+Thumbs.db

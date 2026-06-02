@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: dragon-engine-api-gateway
+
+# Downstream Python services
+dragon:
+  services:
+    graph-service:
+      url: http://localhost:8002
+    event-service:
+      url: http://localhost:8003
+    risk-service:
+      url: http://localhost:8007
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
