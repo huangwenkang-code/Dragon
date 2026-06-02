@@ -1380,6 +1380,38 @@ async def _build_v4_daily_runs(
 
 
 # ---------------------------------------------------------------------------
+# Admin: config & optimization routes
+# ---------------------------------------------------------------------------
+
+@app.get("/admin/config")
+async def get_admin_config():
+    """View current active regime configs from DB."""
+    from shared.config_loader import get_config
+    regimes = ["BULL", "CHOPPY_UP", "CHOPPY", "CHOPPY_DOWN", "BEAR"]
+    result = {}
+    for r in regimes:
+        result[r] = await get_config(r)
+    return result
+
+
+@app.post("/admin/optimize")
+async def trigger_optimization(regime: str = None, days: int = 90, samples: int = 150):
+    """Trigger auto-optimization for a regime."""
+    from scripts.optimize_regime import optimize as _optimize
+    import asyncio as _asyncio
+    _asyncio.create_task(_optimize(regime, days))
+    return {"status": "started", "regime": regime or "auto-detect", "days": days, "samples": samples}
+
+
+@app.post("/admin/config/reload")
+async def reload_admin_config():
+    """Force reload config from DB."""
+    from shared.config_loader import reload_config
+    await reload_config()
+    return {"status": "reloaded"}
+
+
+# ---------------------------------------------------------------------------
 # Token usage routes
 # ---------------------------------------------------------------------------
 

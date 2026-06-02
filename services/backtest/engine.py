@@ -23,10 +23,29 @@ from shared.utils.trading_day import is_trading_day
 
 logger = get_logger(__name__)
 
+# Config cache (refreshed on startup and via /admin/config/reload)
+_CONFIG_CACHE: dict = {}
+
+def _get_regime_multipliers() -> dict[str, float]:
+    """Sync-safe regime multiplier lookup."""
+    if not _CONFIG_CACHE:
+        from shared.config_loader import _cache
+        if _cache:
+            _CONFIG_CACHE.update(_cache)
+    if _CONFIG_CACHE:
+        return {r: cfg.get("capital_multiplier", 0.85) for r, cfg in _CONFIG_CACHE.items()}
+    return {"BULL": 1.0, "CHOPPY_UP": 0.90, "CHOPPY": 0.85, "CHOPPY_DOWN": 0.50, "BEAR": 0.50}
+
+def _get_time_stop_days() -> int:
+    if _CONFIG_CACHE:
+        for cfg in _CONFIG_CACHE.values():
+            return cfg.get("time_stop_days", 40)
+    return 40
+
 # Default params since regime detection is replaced by index MA20 gate
 DEFAULT_PARAMS = RegimeParams(
     cont_weight=0.5, decay_weight=0.5, price_stop_pct=0.06,
-    decay_trigger_days=3, gap_up_pct=0.04, time_stop_days=40,
+    decay_trigger_days=3, gap_up_pct=0.04, time_stop_days=_get_time_stop_days(),
     min_cont_threshold=0.25, position_size_pct=0.20,
 )
 
@@ -317,13 +336,9 @@ class BacktestEngine:
         # ── Step 8: Capital allocation ──
         if eligible:
             per_stock = self.strategy.initial_capital * DEFAULT_PARAMS.position_size_pct
-            # Regime multiplier: BULL=1.0, CHOPPY=0.85, BEAR=0.20
-            if regime == "BEAR":
-                regime_mult = 0.50
-            elif regime == "CHOPPY":
-                regime_mult = 0.85
-            else:
-                regime_mult = 1.0
+            # Regime multiplier from config (with sync-safe defaults)
+            _rmap = _get_regime_multipliers()
+            regime_mult = _rmap.get(regime, 0.85)
             raw_cash = per_stock * len(eligible) * regime_mult
             # Score-weighted multiplier: higher score → more capital (0.50=0.7x, 0.58+=1.0x)
             weight_multipliers = []
